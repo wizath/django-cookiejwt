@@ -24,13 +24,19 @@ class CookieTokenObtainPair(TokenViewBase):
             raise InvalidToken(e.args[0])
 
         serializer_data = serializer.validated_data
-        print('Remember? {}'.format(serializer_data['remember']))
+        remember_session = serializer_data['remember']
+        print('Remember? {}'.format(remember_session))
 
-        access_expiration = (datetime.datetime.utcnow() +
-                             api_settings.ACCESS_TOKEN_LIFETIME)
+        # defaults to session cookie
+        access_expiration = None
+        refresh_expiration = None
 
-        refresh_expiration = (datetime.datetime.utcnow() +
-                              api_settings.REFRESH_TOKEN_LIFETIME)
+        if remember_session:
+            access_expiration = (datetime.datetime.utcnow() +
+                                 api_settings.ACCESS_TOKEN_LIFETIME)
+
+            refresh_expiration = (datetime.datetime.utcnow() +
+                                  api_settings.REFRESH_TOKEN_LIFETIME)
 
         response_data = {
             'user_id': serializer_data['user_id'],
