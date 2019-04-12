@@ -23,13 +23,15 @@ class CookieTokenObtainPair(TokenViewBase):
         except TokenError as e:
             raise InvalidToken(e.args[0])
 
+        serializer_data = serializer.validated_data
+        print('Remember? {}'.format(serializer_data['remember']))
+
         access_expiration = (datetime.datetime.utcnow() +
                              api_settings.ACCESS_TOKEN_LIFETIME)
 
         refresh_expiration = (datetime.datetime.utcnow() +
                               api_settings.REFRESH_TOKEN_LIFETIME)
 
-        serializer_data = serializer.validated_data
         response_data = {
             'user_id': serializer_data['user_id'],
             'refresh_expire': int(refresh_expiration.timestamp()),
@@ -57,7 +59,10 @@ class CookieTokenVerifyView(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
-        return Response({}, status=status.HTTP_200_OK)
+        print(self.request.user.id)
+        return Response({
+            'user_id': self.request.user.id
+        }, status=status.HTTP_200_OK)
 
 
 class CookieTokenClearView(APIView):
