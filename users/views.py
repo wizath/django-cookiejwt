@@ -7,6 +7,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from rest_framework_simplejwt.settings import api_settings
 from rest_framework_simplejwt.views import TokenViewBase
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from .serializers import TokenDetailPairObtainSerializer
 
@@ -77,3 +78,13 @@ class CookieTokenClearView(APIView):
         response.delete_cookie('access_token')
         response.delete_cookie('refresh_token')
         return response
+
+
+class CookieTokenRefreshView(APIView):
+
+    def post(self, request, *args, **kwargs):
+        raw_token = request.COOKIES.get('refresh_token', None)
+
+
+
+        return Response({}, status=status.HTTP_200_OK)
