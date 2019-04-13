@@ -8,6 +8,7 @@ from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from rest_framework_simplejwt.settings import api_settings
 from rest_framework_simplejwt.views import TokenViewBase
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 
 from .serializers import TokenDetailPairObtainSerializer
 
@@ -80,11 +81,42 @@ class CookieTokenClearView(APIView):
         return response
 
 
-class CookieTokenRefreshView(APIView):
+class CookieTokenRefreshView(TokenViewBase):
+    serializer_class = TokenRefreshSerializer
 
+    # override default post call from simplejwt library
     def post(self, request, *args, **kwargs):
         raw_token = request.COOKIES.get('refresh_token', None)
+        if raw_token is None:
+            raise InvalidToken()
 
+        request_data = {
+            'refresh': raw_token
+        }
+        serializer = self.get_serializer(data=request_data)
 
+        try:
+            serializer.is_valid(raise_exception=True)
+        except TokenError as e:
+            raise InvalidToken(e.args[0])
 
-        return Response({}, status=status.HTTP_200_OK)
+        serializer_data = serializer.validated_data
+        access_expiration = (datetime.datetime.utcnow() +
+                             api_settings.ACCESS_TOKEN_LIFETIME)
+
+        response_data = {
+            'access_expire': int(access_expiration.timestamp())
+        }
+
+        response = Response(response_data, status=status.HTTP_200_OK)
+
+        # new access token with session scope
+        access_expiration = None
+
+        # append access token
+        response.set_cookie('access_token',
+                            serializer_data['access'],
+                            expires=access_expiration,
+                            httponly=True)
+
+        return response

@@ -30,18 +30,4 @@ class CookieJWTTokenUserAuthentication(JWTTokenUserAuthentication):
             if refresh_token is None:
                 raise e
 
-            messages = []
-            try:
-                # if refresh token is valid, pass auth as
-                # unauthorized user. That excludes using
-                # only refresh token for accessing API
-                validated_token = RefreshToken(refresh_token)
-                return None, None
-            except TokenError as e:
-                messages.append({'token_class': RefreshToken.__name__,
-                                 'token_type': RefreshToken.token_type,
-                                 'message': e.args[0]})
-            raise InvalidToken({
-                'detail': _('Given token not valid for any token type'),
-                'messages': messages,
-            })
+            return None, None
