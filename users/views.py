@@ -25,18 +25,12 @@ class CookieTokenObtainPair(TokenViewBase):
 
         serializer_data = serializer.validated_data
         remember_session = serializer_data['remember']
-        print('Remember? {}'.format(remember_session))
 
-        # defaults to session cookie
-        access_expiration = None
-        refresh_expiration = None
+        access_expiration = (datetime.datetime.utcnow() +
+                             api_settings.ACCESS_TOKEN_LIFETIME)
 
-        if remember_session:
-            access_expiration = (datetime.datetime.utcnow() +
-                                 api_settings.ACCESS_TOKEN_LIFETIME)
-
-            refresh_expiration = (datetime.datetime.utcnow() +
-                                  api_settings.REFRESH_TOKEN_LIFETIME)
+        refresh_expiration = (datetime.datetime.utcnow() +
+                              api_settings.REFRESH_TOKEN_LIFETIME)
 
         response_data = {
             'user_id': serializer_data['user_id'],
@@ -45,6 +39,11 @@ class CookieTokenObtainPair(TokenViewBase):
         }
 
         response = Response(response_data, status=status.HTTP_200_OK)
+
+        # clear cookie expiration if session cookie is selected
+        if not remember_session:
+            access_expiration = None
+            refresh_expiration = None
 
         # append access token
         response.set_cookie('access_token',
@@ -65,7 +64,6 @@ class CookieTokenVerifyView(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
-        print(self.request.user.id)
         return Response({
             'user_id': self.request.user.id
         }, status=status.HTTP_200_OK)

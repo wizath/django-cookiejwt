@@ -3,6 +3,8 @@ from rest_framework_simplejwt.authentication import JWTTokenUserAuthentication
 
 class CookieJWTTokenUserAuthentication(JWTTokenUserAuthentication):
 
+    # override authenticate call to retreive cookie from request
+    # then perform authentication
     def authenticate(self, request):
         raw_token = self.get_raw_token(request)
         validated_token = self.get_validated_token(raw_token)
