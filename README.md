@@ -10,3 +10,6 @@ Since rest framework is focused on passing JSON data between clients and we need
 
 ## Authentication workaround
 Since DRF_SimpleJWT rejects call when `access_token` is invalid (missing or expired), new subclassed procedure allows to enter as unauthorized user if token is expired or missing. That allows for requesting new `access_token` based on stored in cookie `refresh_token` info
+
+## Todo
+* Manage blacklisting refresh_tokens after user logout
