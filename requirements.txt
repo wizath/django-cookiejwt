@@ -1,0 +1,6 @@
+Django==2.2
+djangorestframework==3.9.2
+djangorestframework-simplejwt==4.1.5
+PyJWT==1.7.1
+pytz==2019.1
+sqlparse==0.3.0
