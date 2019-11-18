@@ -8,7 +8,7 @@ from rest_framework_simplejwt.tokens import AccessToken
 from users.models import User
 
 
-class TestJWTAuthentication(APITestCase):
+class TestCokkieJWTTokenVerify(APITestCase):
     def setUp(self):
         user = User(username='testuser', email='test@test.com')
         user.set_password('testpassword')
