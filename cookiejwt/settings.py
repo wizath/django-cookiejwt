@@ -27,6 +27,8 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+# override default User model
+AUTH_USER_MODEL = 'users.User'
 
 # Application definition
 
