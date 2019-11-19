@@ -1,11 +1,12 @@
 import json
 import os
 from http import cookies
+import datetime
 
 from rest_framework import status
 from rest_framework.test import APITestCase
 from rest_framework_simplejwt.tokens import AccessToken
-
+from rest_framework_simplejwt.settings import api_settings
 from users.authentication import CookieAccessTokenAuthentication
 from users.models import User
 
@@ -56,6 +57,13 @@ class TestCookieTokenObtain(APITestCase):
         raw_token = response.client.cookies['access_token']
         # Morsel dict
         # {'expires': 'Mon, 18 Nov 2019 23:45:35 GMT', 'path': '/', 'comment': '', 'domain': '', 'max-age': 300, 'secure': '', 'httponly': True, 'version': '', 'samesite': ''}
+
+        self.assertTrue(raw_token['httponly'])
+        dt = datetime.datetime.strptime(raw_token['expires'], "%a, %d %b %Y %H:%M:%S %Z")
+        delta = dt - datetime.datetime.now()
+        expire_seconds = round(delta.seconds, -2)
+        self.assertEqual(expire_seconds, api_settings.ACCESS_TOKEN_LIFETIME.seconds)
+
         backend = CookieAccessTokenAuthentication()
         validated_token = backend.get_validated_token(raw_token.value)
         user = backend.get_user(validated_token)
