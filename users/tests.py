@@ -143,3 +143,25 @@ class TestCookieTokenRefresh(APITestCase):
         delta = dt - datetime.datetime.now()
         expire = datetime.timedelta(seconds=round(delta.seconds, -2))
         self.assertEqual(expire, api_settings.ACCESS_TOKEN_LIFETIME)
+
+
+class TestCookieTokenClear(APITestCase):
+
+    def setUp(self):
+        user = User(username='testuser', email='test@test.com')
+        user.set_password('testpassword')
+        user.save()
+
+    def test_token_refresh_endpoint_bad_refresh_cookie(self):
+        token_cookie = cookies.SimpleCookie({'refresh_token': str(os.urandom(32))})
+        token_cookie = cookies.SimpleCookie({'access_token': str(os.urandom(32))})
+        self.client.cookies = token_cookie
+
+        response = self.client.post('/api/token/clear')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        raw_access = response.client.cookies['access_token']
+        raw_refresh = response.client.cookies['refresh_token']
+
+        self.assertEqual(raw_access.value, "")
+        self.assertEqual(raw_refresh.value, "")

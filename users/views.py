@@ -95,3 +95,14 @@ class CookieTokenRefresh(TokenViewBase):
                             httponly=True)
 
         return response
+
+
+class CookieTokenClear(APIView):
+    permission_classes = ()
+    authentication_classes = ()
+
+    def post(self, request, *args, **kwargs):
+        response = Response({}, status=status.HTTP_200_OK)
+        response.delete_cookie('access_token')
+        response.delete_cookie('refresh_token')
+        return response
