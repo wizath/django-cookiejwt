@@ -61,8 +61,15 @@ class TestCookieTokenObtain(APITestCase):
         self.assertTrue(raw_token['httponly'])
         dt = datetime.datetime.strptime(raw_token['expires'], "%a, %d %b %Y %H:%M:%S %Z")
         delta = dt - datetime.datetime.now()
-        expire_seconds = round(delta.seconds, -2)
-        self.assertEqual(expire_seconds, api_settings.ACCESS_TOKEN_LIFETIME.seconds)
+        expire = datetime.timedelta(seconds=round(delta.seconds, -2))
+        self.assertEqual(expire, api_settings.ACCESS_TOKEN_LIFETIME)
+
+        raw_refresh = response.client.cookies['refresh_token']
+        self.assertTrue(raw_refresh['httponly'])
+        dt = datetime.datetime.strptime(raw_refresh['expires'], "%a, %d %b %Y %H:%M:%S %Z")
+        delta = dt - datetime.datetime.now()
+        expire = datetime.timedelta(seconds=round(delta.seconds, -2))
+        self.assertEqual(expire, api_settings.REFRESH_TOKEN_LIFETIME)
 
         backend = CookieAccessTokenAuthentication()
         validated_token = backend.get_validated_token(raw_token.value)
