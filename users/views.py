@@ -5,11 +5,11 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenRefreshSerializer
+from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework_simplejwt.settings import api_settings
 from rest_framework_simplejwt.views import TokenViewBase
 
-from users.authentication import CookieRefreshTokenAuthentication
+from users.serializers import TokenDetailPairObtainSerializer
 
 
 class CookieTokenVerify(APIView):
@@ -22,7 +22,7 @@ class CookieTokenVerify(APIView):
 
 
 class CookieTokenObtainPair(TokenViewBase):
-    serializer_class = TokenObtainPairSerializer
+    serializer_class = TokenDetailPairObtainSerializer
     permission_classes = ()
 
     def post(self, request, *args, **kwargs):
@@ -41,23 +41,24 @@ class CookieTokenObtainPair(TokenViewBase):
                               api_settings.REFRESH_TOKEN_LIFETIME)
 
         response_data = {
-            # 'user_id': serializer_data['user_id'],
+            'user_id': serializer_data['user_id'],
             'refresh_expire': int(refresh_expiration.timestamp()),
             'access_expire': int(access_expiration.timestamp())
         }
 
         response = Response(response_data, status=status.HTTP_200_OK)
+        session_cookie = serializer_data['remember']
 
         # append access token
         response.set_cookie('access_token',
                             serializer_data['access'],
-                            expires=access_expiration,
+                            expires=None if session_cookie else access_expiration,
                             httponly=True)
 
         # append refresh token
         response.set_cookie('refresh_token',
                             serializer_data['refresh'],
-                            expires=refresh_expiration,
+                            expires=None if session_cookie else refresh_expiration,
                             httponly=True)
 
         return response

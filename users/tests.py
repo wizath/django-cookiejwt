@@ -51,7 +51,7 @@ class TestCookieTokenObtain(APITestCase):
         response = self.client.post('/api/token', json.dumps({
             'username': 'testuser',
             'password': 'testpassword',
-            # 'remember': False
+            'remember': False
         }), content_type="application/json")
 
         raw_token = response.client.cookies['access_token']
