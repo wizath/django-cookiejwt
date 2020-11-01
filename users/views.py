@@ -5,18 +5,26 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
+from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework_simplejwt.settings import api_settings
 from rest_framework_simplejwt.views import TokenViewBase
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 
-from .serializers import TokenDetailPairObtainSerializer
+from users.serializers import TokenDetailPairObtainSerializer
+
+
+class CookieTokenVerify(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, *args, **kwargs):
+        return Response({
+            'user_id': self.request.user.id
+        }, status=status.HTTP_200_OK)
 
 
 class CookieTokenObtainPair(TokenViewBase):
     serializer_class = TokenDetailPairObtainSerializer
+    permission_classes = ()
 
-    # override default post call from simplejwt library
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
 
@@ -26,8 +34,6 @@ class CookieTokenObtainPair(TokenViewBase):
             raise InvalidToken(e.args[0])
 
         serializer_data = serializer.validated_data
-        remember_session = serializer_data['remember']
-
         access_expiration = (datetime.datetime.utcnow() +
                              api_settings.ACCESS_TOKEN_LIFETIME)
 
@@ -41,59 +47,32 @@ class CookieTokenObtainPair(TokenViewBase):
         }
 
         response = Response(response_data, status=status.HTTP_200_OK)
-
-        # clear cookie expiration if session cookie is selected
-        if not remember_session:
-            access_expiration = None
-            refresh_expiration = None
+        session_cookie = serializer_data['remember']
 
         # append access token
         response.set_cookie('access_token',
                             serializer_data['access'],
-                            expires=access_expiration,
+                            expires=None if session_cookie else access_expiration,
                             httponly=True)
 
         # append refresh token
         response.set_cookie('refresh_token',
                             serializer_data['refresh'],
-                            expires=refresh_expiration,
+                            expires=None if session_cookie else refresh_expiration,
                             httponly=True)
 
         return response
 
 
-class CookieTokenVerifyView(APIView):
-    permission_classes = (IsAuthenticated,)
-
-    def get(self, request, *args, **kwargs):
-        return Response({
-            'user_id': self.request.user.id
-        }, status=status.HTTP_200_OK)
-
-
-class CookieTokenClearView(APIView):
-    permission_classes = (IsAuthenticated,)
-
-    def post(self, request, *args, **kwargs):
-        response = Response({}, status=status.HTTP_200_OK)
-        response.delete_cookie('access_token')
-        response.delete_cookie('refresh_token')
-        return response
-
-
-class CookieTokenRefreshView(TokenViewBase):
+class CookieTokenRefresh(TokenViewBase):
     serializer_class = TokenRefreshSerializer
+    authentication_classes = ()
 
-    # override default post call from simplejwt library
     def post(self, request, *args, **kwargs):
         raw_token = request.COOKIES.get('refresh_token', None)
-        if raw_token is None:
-            raise InvalidToken()
-
-        request_data = {
+        serializer = self.get_serializer(data={
             'refresh': raw_token
-        }
-        serializer = self.get_serializer(data=request_data)
+        })
 
         try:
             serializer.is_valid(raise_exception=True)
@@ -110,13 +89,21 @@ class CookieTokenRefreshView(TokenViewBase):
 
         response = Response(response_data, status=status.HTTP_200_OK)
 
-        # new access token with session scope
-        access_expiration = None
-
         # append access token
         response.set_cookie('access_token',
                             serializer_data['access'],
                             expires=access_expiration,
                             httponly=True)
 
+        return response
+
+
+class CookieTokenClear(APIView):
+    permission_classes = ()
+    authentication_classes = ()
+
+    def post(self, request, *args, **kwargs):
+        response = Response({}, status=status.HTTP_200_OK)
+        response.delete_cookie('access_token')
+        response.delete_cookie('refresh_token')
         return response
