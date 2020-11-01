@@ -1,3 +1,4 @@
+from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -6,6 +7,7 @@ class TokenDetailPairObtainSerializer(TokenObtainSerializer):
 
     def __init__(self, *args, **kwargs):
         super(TokenDetailPairObtainSerializer, self).__init__(*args, **kwargs)
+        self.fields['remember'] = serializers.BooleanField()
 
     @classmethod
     def get_token(cls, user):
@@ -13,7 +15,6 @@ class TokenDetailPairObtainSerializer(TokenObtainSerializer):
 
     def validate(self, attrs):
         data = super().validate(attrs)
-
         refresh = self.get_token(self.user)
 
         data['refresh'] = str(refresh)

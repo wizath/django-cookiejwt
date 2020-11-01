@@ -47,7 +47,7 @@ class CookieTokenObtainPair(TokenViewBase):
         }
 
         response = Response(response_data, status=status.HTTP_200_OK)
-        session_cookie = serializer_data['remember']
+        session_cookie = not serializer_data['remember']
 
         # append access token
         response.set_cookie('access_token',

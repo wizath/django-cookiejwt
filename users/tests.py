@@ -47,7 +47,7 @@ class TestCookieTokenObtain(APITestCase):
         user.set_password('testpassword')
         user.save()
 
-    def test_cookie_tokens_obtain(self):
+    def test_cookie_tokens_obtain_session(self):
         response = self.client.post('/api/token', json.dumps({
             'username': 'testuser',
             'password': 'testpassword',
@@ -58,6 +58,28 @@ class TestCookieTokenObtain(APITestCase):
         # Morsel dict
         # {'expires': 'Mon, 18 Nov 2019 23:45:35 GMT', 'path': '/', 'comment': '', 'domain': '', 'max-age': 300, 'secure': '', 'httponly': True, 'version': '', 'samesite': ''}
 
+        self.assertTrue(raw_token['httponly'])
+        self.assertEqual(raw_token['expires'], '')
+
+        raw_refresh = response.client.cookies['refresh_token']
+        self.assertTrue(raw_refresh['httponly'])
+        self.assertEqual(raw_refresh['expires'], '')
+
+        backend = CookieAccessTokenAuthentication()
+        validated_token = backend.get_validated_token(raw_token.value)
+        user = backend.get_user(validated_token)
+        self.assertEqual(user.id, 1)
+
+    def test_cookie_tokens_obtain_remember(self):
+        response = self.client.post('/api/token', json.dumps({
+            'username': 'testuser',
+            'password': 'testpassword',
+            'remember': True
+        }), content_type="application/json")
+
+        raw_token = response.client.cookies['access_token']
+        # Morsel dict
+        # {'expires': 'Mon, 18 Nov 2019 23:45:35 GMT', 'path': '/', 'comment': '', 'domain': '', 'max-age': 300, 'secure': '', 'httponly': True, 'version': '', 'samesite': ''}
         self.assertTrue(raw_token['httponly'])
         dt = datetime.datetime.strptime(raw_token['expires'], "%a, %d %b %Y %H:%M:%S %Z")
         delta = dt - datetime.datetime.now()
@@ -80,7 +102,7 @@ class TestCookieTokenObtain(APITestCase):
         response = self.client.post('/api/token', json.dumps({
             'username': 'testuser',
             'password': 'wrongpassword',
-            # 'remember': False
+            'remember': False
         }), content_type="application/json")
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
@@ -89,7 +111,7 @@ class TestCookieTokenObtain(APITestCase):
         response = self.client.post('/api/token', json.dumps({
             'username': 'nonexistinguser',
             'password': 'testpassword',
-            # 'remember': False
+            'remember': False
         }), content_type="application/json")
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
